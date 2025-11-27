@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eggs & Kegs - Breakfast Tavern</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Handlee&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div id="title-screen" class="screen active">
+            <div class="title-bg"></div>
+            <div class="title-content">
+                <div class="logo">
+                    <span class="egg-icon">🍳</span>
+                    <h1>Eggs & Kegs</h1>
+                    <span class="keg-icon">🍺</span>
+                </div>
+                <p class="tagline">~ A Breakfast Tavern Adventure ~</p>
+                <button id="start-btn" class="btn-primary">Open for Business!</button>
+                <button id="tutorial-btn" class="btn-secondary">How to Play</button>
+            </div>
+            <div class="floating-items">
+                <span class="float-item" style="--delay: 0s; --x: 10%;">🥓</span>
+                <span class="float-item" style="--delay: 1s; --x: 85%;">🧇</span>
+                <span class="float-item" style="--delay: 2s; --x: 25%;">☕</span>
+                <span class="float-item" style="--delay: 0.5s; --x: 70%;">🥞</span>
+                <span class="float-item" style="--delay: 1.5s; --x: 50%;">🍺</span>
+            </div>
+        </div>
+
+        <!-- Tutorial Screen -->
+        <div id="tutorial-screen" class="screen">
+            <div class="tutorial-content">
+                <h2>Welcome to Eggs & Kegs!</h2>
+                <div class="tutorial-steps">
+                    <div class="step">
+                        <span class="step-icon">👋</span>
+                        <p><strong>Greet Customers:</strong> Click on customers when they arrive to seat them.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-icon">📝</span>
+                        <p><strong>Take Orders:</strong> Click seated customers to see what they want.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-icon">🍳</span>
+                        <p><strong>Cook & Serve:</strong> Click kitchen stations to prepare food, then deliver to customers.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-icon">💰</span>
+                        <p><strong>Earn Tips:</strong> Serve quickly for bigger tips and happier customers!</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-icon">⬆️</span>
+                        <p><strong>Upgrade:</strong> Use earnings to unlock new recipes and improve your tavern!</p>
+                    </div>
+                </div>
+                <button id="back-to-title" class="btn-secondary">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- HUD -->
+            <div id="hud">
+                <div class="hud-left">
+                    <div class="money-display">
+                        <span class="coin-icon">🪙</span>
+                        <span id="money-amount">0</span>
+                    </div>
+                    <div class="day-display">
+                        <span class="sun-icon">☀️</span>
+                        <span>Day <span id="day-number">1</span></span>
+                    </div>
+                </div>
+                <div class="hud-center">
+                    <div class="reputation-display">
+                        <span>Reputation:</span>
+                        <div class="star-rating" id="reputation-stars">
+                            <span class="star filled">⭐</span>
+                            <span class="star">⭐</span>
+                            <span class="star">⭐</span>
+                            <span class="star">⭐</span>
+                            <span class="star">⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hud-right">
+                    <div class="timer-display">
+                        <span class="clock-icon">⏰</span>
+                        <span id="time-remaining">5:00</span>
+                    </div>
+                    <button id="pause-btn" class="btn-icon">⏸️</button>
+                    <button id="upgrade-btn" class="btn-icon">🛠️</button>
+                </div>
+            </div>
+
+            <!-- Main Game Canvas -->
+            <canvas id="game-canvas"></canvas>
+
+            <!-- Order Queue Display -->
+            <div id="order-queue">
+                <h3>Orders</h3>
+                <div id="orders-list"></div>
+            </div>
+
+            <!-- Cooking Station UI -->
+            <div id="cooking-modal" class="modal hidden">
+                <div class="modal-content cooking-content">
+                    <h3 id="station-name">Griddle</h3>
+                    <div id="recipe-buttons"></div>
+                    <div id="cooking-progress" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="cook-progress-fill"></div>
+                        </div>
+                        <p id="cooking-item-name">Cooking...</p>
+                    </div>
+                    <button class="close-modal">✕</button>
+                </div>
+            </div>
+
+            <!-- Held Item Display -->
+            <div id="held-item" class="hidden">
+                <span id="held-item-icon"></span>
+            </div>
+        </div>
+
+        <!-- Day End Screen -->
+        <div id="day-end-screen" class="screen">
+            <div class="day-end-content">
+                <h2>Day Complete!</h2>
+                <div class="day-stats">
+                    <div class="stat">
+                        <span class="stat-label">Customers Served</span>
+                        <span class="stat-value" id="customers-served">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Orders Completed</span>
+                        <span class="stat-value" id="orders-completed">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Tips Earned</span>
+                        <span class="stat-value" id="tips-earned">$0</span>
+                    </div>
+                    <div class="stat highlight">
+                        <span class="stat-label">Total Earnings</span>
+                        <span class="stat-value" id="total-earnings">$0</span>
+                    </div>
+                </div>
+                <div class="day-end-buttons">
+                    <button id="next-day-btn" class="btn-primary">Next Day</button>
+                    <button id="shop-btn" class="btn-secondary">Visit Shop</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrade Shop Screen -->
+        <div id="shop-screen" class="screen">
+            <div class="shop-content">
+                <h2>🛠️ Tavern Upgrades</h2>
+                <div class="shop-categories">
+                    <button class="shop-tab active" data-category="recipes">Recipes</button>
+                    <button class="shop-tab" data-category="stations">Stations</button>
+                    <button class="shop-tab" data-category="decor">Decor</button>
+                </div>
+                <div id="shop-items"></div>
+                <div class="shop-footer">
+                    <div class="shop-money">
+                        <span class="coin-icon">🪙</span>
+                        <span id="shop-money-amount">0</span>
+                    </div>
+                    <button id="close-shop-btn" class="btn-secondary">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-screen" class="screen">
+            <div class="pause-content">
+                <h2>⏸️ Paused</h2>
+                <button id="resume-btn" class="btn-primary">Resume</button>
+                <button id="quit-btn" class="btn-secondary">Quit to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/recipes.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
+

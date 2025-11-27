@@ -1,0 +1,897 @@
+/* ===============================================
+   EGGS & KEGS - A Breakfast Tavern Game
+   Cozy, warm aesthetic with hand-drawn feel
+   =============================================== */
+
+:root {
+    /* Warm breakfast color palette */
+    --color-cream: #FFF8E7;
+    --color-butter: #FFE4A0;
+    --color-egg-yolk: #FFB923;
+    --color-maple: #C67D30;
+    --color-bacon: #B8472A;
+    --color-coffee: #4A2C23;
+    --color-toast: #D4A574;
+    --color-keg-gold: #DAA520;
+    --color-beer-foam: #FFFDD0;
+    --color-wood-dark: #5D4037;
+    --color-wood-light: #8D6E63;
+    --color-success: #4CAF50;
+    --color-warning: #FF9800;
+    --color-danger: #E53935;
+    
+    /* Shadows and effects */
+    --shadow-soft: 0 4px 20px rgba(74, 44, 35, 0.15);
+    --shadow-hard: 0 6px 0 rgba(74, 44, 35, 0.3);
+    --glow-warm: 0 0 30px rgba(255, 185, 35, 0.4);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Fredoka', sans-serif;
+    background: var(--color-coffee);
+    overflow: hidden;
+    user-select: none;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===============================================
+   SCREENS
+   =============================================== */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.screen.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* ===============================================
+   TITLE SCREEN
+   =============================================== */
+#title-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        135deg,
+        var(--color-coffee) 0%,
+        var(--color-wood-dark) 50%,
+        var(--color-maple) 100%
+    );
+}
+
+.title-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse at 20% 30%, rgba(255, 228, 160, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255, 185, 35, 0.1) 0%, transparent 40%);
+    pointer-events: none;
+}
+
+.title-content {
+    z-index: 2;
+    text-align: center;
+    animation: fadeInUp 1s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.logo h1 {
+    font-family: 'Handlee', cursive;
+    font-size: 5rem;
+    color: var(--color-butter);
+    text-shadow: 
+        4px 4px 0 var(--color-maple),
+        8px 8px 0 rgba(0, 0, 0, 0.2);
+    letter-spacing: 2px;
+}
+
+.egg-icon, .keg-icon {
+    font-size: 4rem;
+    animation: wobble 2s ease-in-out infinite;
+}
+
+.keg-icon {
+    animation-delay: 0.5s;
+}
+
+@keyframes wobble {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.tagline {
+    font-family: 'Handlee', cursive;
+    font-size: 1.5rem;
+    color: var(--color-cream);
+    margin-bottom: 50px;
+    opacity: 0.9;
+}
+
+/* Floating breakfast items */
+.floating-items {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.float-item {
+    position: absolute;
+    font-size: 3rem;
+    animation: floatUp 8s linear infinite;
+    animation-delay: var(--delay);
+    left: var(--x);
+    bottom: -100px;
+    opacity: 0.6;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(-120vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ===============================================
+   BUTTONS
+   =============================================== */
+.btn-primary, .btn-secondary {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, var(--color-egg-yolk) 0%, var(--color-maple) 100%);
+    color: var(--color-coffee);
+    box-shadow: 
+        0 6px 0 var(--color-bacon),
+        var(--shadow-soft);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 9px 0 var(--color-bacon),
+        0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(3px);
+    box-shadow: 
+        0 3px 0 var(--color-bacon),
+        var(--shadow-soft);
+}
+
+.btn-secondary {
+    background: var(--color-cream);
+    color: var(--color-coffee);
+    box-shadow: 
+        0 4px 0 var(--color-toast),
+        var(--shadow-soft);
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    background: var(--color-butter);
+}
+
+.btn-secondary:active {
+    transform: translateY(2px);
+    box-shadow: 
+        0 2px 0 var(--color-toast);
+}
+
+.btn-icon {
+    background: var(--color-cream);
+    border: none;
+    border-radius: 12px;
+    width: 45px;
+    height: 45px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-icon:hover {
+    transform: scale(1.1);
+    background: var(--color-butter);
+}
+
+/* ===============================================
+   TUTORIAL SCREEN
+   =============================================== */
+#tutorial-screen {
+    background: rgba(74, 44, 35, 0.95);
+    align-items: center;
+    justify-content: center;
+}
+
+.tutorial-content {
+    background: var(--color-cream);
+    padding: 40px;
+    border-radius: 30px;
+    max-width: 600px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+}
+
+.tutorial-content h2 {
+    font-size: 2rem;
+    color: var(--color-coffee);
+    margin-bottom: 30px;
+}
+
+.tutorial-steps {
+    text-align: left;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--color-butter);
+    border-radius: 15px;
+}
+
+.step-icon {
+    font-size: 2rem;
+}
+
+.step p {
+    color: var(--color-coffee);
+    line-height: 1.5;
+}
+
+/* ===============================================
+   GAME SCREEN
+   =============================================== */
+#game-screen {
+    flex-direction: column;
+    background: var(--color-wood-dark);
+}
+
+#game-canvas {
+    width: 100%;
+    flex: 1;
+    cursor: pointer;
+}
+
+/* ===============================================
+   HUD
+   =============================================== */
+#hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: linear-gradient(180deg, var(--color-wood-dark) 0%, var(--color-wood-light) 100%);
+    border-bottom: 4px solid var(--color-maple);
+    z-index: 10;
+}
+
+.hud-left, .hud-center, .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.money-display, .day-display, .timer-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-cream);
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-weight: 600;
+    color: var(--color-coffee);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.coin-icon, .sun-icon, .clock-icon {
+    font-size: 1.3rem;
+}
+
+#money-amount {
+    font-size: 1.2rem;
+    min-width: 60px;
+}
+
+.reputation-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-cream);
+    font-weight: 500;
+}
+
+.star-rating {
+    display: flex;
+    gap: 2px;
+}
+
+.star {
+    font-size: 1.2rem;
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.star.filled {
+    opacity: 1;
+    filter: none;
+}
+
+/* ===============================================
+   ORDER QUEUE
+   =============================================== */
+#order-queue {
+    position: absolute;
+    top: 80px;
+    right: 15px;
+    width: 180px;
+    background: var(--color-cream);
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: var(--shadow-soft);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 5;
+}
+
+#order-queue h3 {
+    font-size: 1rem;
+    color: var(--color-coffee);
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 2px dashed var(--color-toast);
+    padding-bottom: 8px;
+}
+
+.order-card {
+    background: var(--color-butter);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--color-success);
+    transition: all 0.3s ease;
+}
+
+.order-card.urgent {
+    border-left-color: var(--color-warning);
+    animation: pulse 1s ease infinite;
+}
+
+.order-card.critical {
+    border-left-color: var(--color-danger);
+    animation: shake 0.5s ease infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.order-customer {
+    font-size: 0.8rem;
+    color: var(--color-wood-dark);
+    margin-bottom: 5px;
+}
+
+.order-items {
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+    letter-spacing: 2px;
+}
+
+.order-timer {
+    font-size: 0.75rem;
+    color: var(--color-maple);
+    margin-top: 5px;
+}
+
+/* ===============================================
+   COOKING MODAL
+   =============================================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(74, 44, 35, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: var(--color-cream);
+    border-radius: 25px;
+    padding: 30px;
+    position: relative;
+    box-shadow: var(--shadow-soft);
+    min-width: 350px;
+}
+
+.cooking-content h3 {
+    font-size: 1.5rem;
+    color: var(--color-coffee);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#recipe-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.recipe-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    background: var(--color-butter);
+    border: 3px solid transparent;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recipe-btn:hover {
+    background: var(--color-egg-yolk);
+    transform: scale(1.05);
+}
+
+.recipe-btn.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.recipe-btn.locked:hover {
+    transform: none;
+    background: var(--color-butter);
+}
+
+.recipe-btn .recipe-icon {
+    font-size: 2.8rem;
+    margin-bottom: 8px;
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+.recipe-btn .recipe-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-coffee);
+}
+
+.recipe-btn .recipe-time {
+    font-size: 0.75rem;
+    color: var(--color-wood-light);
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--color-bacon);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    background: var(--color-danger);
+    transform: rotate(90deg);
+}
+
+#cooking-progress {
+    text-align: center;
+}
+
+.progress-bar {
+    height: 20px;
+    background: var(--color-toast);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-egg-yolk), var(--color-success));
+    width: 0%;
+    transition: width 0.1s linear;
+    border-radius: 10px;
+}
+
+#cooking-item-name {
+    font-weight: 600;
+    color: var(--color-coffee);
+}
+
+/* ===============================================
+   HELD ITEM
+   =============================================== */
+#held-item {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    font-size: 4rem;
+    filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.6));
+    transition: transform 0.1s ease;
+}
+
+#held-item.hidden {
+    display: none;
+}
+
+/* ===============================================
+   DAY END SCREEN
+   =============================================== */
+#day-end-screen {
+    background: rgba(74, 44, 35, 0.95);
+    align-items: center;
+    justify-content: center;
+}
+
+.day-end-content {
+    background: var(--color-cream);
+    padding: 40px;
+    border-radius: 30px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    animation: popIn 0.4s ease;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.day-end-content h2 {
+    font-size: 2.5rem;
+    color: var(--color-coffee);
+    margin-bottom: 30px;
+}
+
+.day-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat {
+    background: var(--color-butter);
+    padding: 15px;
+    border-radius: 15px;
+}
+
+.stat.highlight {
+    grid-column: span 2;
+    background: linear-gradient(135deg, var(--color-egg-yolk), var(--color-maple));
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--color-wood-dark);
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-coffee);
+}
+
+.stat.highlight .stat-value {
+    color: var(--color-cream);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ===============================================
+   SHOP SCREEN
+   =============================================== */
+#shop-screen {
+    background: rgba(74, 44, 35, 0.95);
+    align-items: center;
+    justify-content: center;
+}
+
+.shop-content {
+    background: var(--color-cream);
+    padding: 30px;
+    border-radius: 30px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    box-shadow: var(--shadow-soft);
+}
+
+.shop-content h2 {
+    font-size: 2rem;
+    color: var(--color-coffee);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.shop-categories {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.shop-tab {
+    padding: 10px 25px;
+    background: var(--color-butter);
+    border: none;
+    border-radius: 25px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--color-coffee);
+}
+
+.shop-tab:hover {
+    background: var(--color-egg-yolk);
+}
+
+.shop-tab.active {
+    background: var(--color-maple);
+    color: var(--color-cream);
+}
+
+#shop-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.shop-item {
+    background: var(--color-butter);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.2s ease;
+    border: 3px solid transparent;
+}
+
+.shop-item:hover {
+    transform: translateY(-5px);
+    border-color: var(--color-egg-yolk);
+}
+
+.shop-item.owned {
+    opacity: 0.6;
+    background: var(--color-toast);
+}
+
+.shop-item-icon {
+    font-size: 3.2rem;
+    margin-bottom: 12px;
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+.shop-item-name {
+    font-weight: 600;
+    color: var(--color-coffee);
+    margin-bottom: 5px;
+}
+
+.shop-item-desc {
+    font-size: 0.8rem;
+    color: var(--color-wood-light);
+    margin-bottom: 10px;
+}
+
+.shop-item-price {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--color-cream);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 600;
+    color: var(--color-coffee);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shop-item-price:hover {
+    background: var(--color-success);
+    color: white;
+}
+
+.shop-item.owned .shop-item-price {
+    background: var(--color-success);
+    color: white;
+    cursor: default;
+}
+
+.shop-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px dashed var(--color-toast);
+}
+
+.shop-money {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-coffee);
+}
+
+/* ===============================================
+   PAUSE SCREEN
+   =============================================== */
+#pause-screen {
+    background: rgba(74, 44, 35, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+
+.pause-content {
+    background: var(--color-cream);
+    padding: 40px;
+    border-radius: 30px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+}
+
+.pause-content h2 {
+    font-size: 2rem;
+    color: var(--color-coffee);
+    margin-bottom: 30px;
+}
+
+/* ===============================================
+   SCROLLBAR
+   =============================================== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-toast);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-maple);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-bacon);
+}
+
+/* ===============================================
+   RESPONSIVE
+   =============================================== */
+@media (max-width: 768px) {
+    .logo h1 {
+        font-size: 3rem;
+    }
+    
+    .egg-icon, .keg-icon {
+        font-size: 2.5rem;
+    }
+    
+    #order-queue {
+        width: 140px;
+        padding: 10px;
+    }
+    
+    .day-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat.highlight {
+        grid-column: span 1;
+    }
+}
+
