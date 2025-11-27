@@ -83,6 +83,16 @@ class Game {
             height: 80
         };
         
+        // Serving counter (storage for completed items)
+        this.servingCounter = {
+            x: 0,  // Will be set in setupServingCounter
+            y: 220,
+            width: 0,
+            height: 70,
+            slots: [],
+            maxSlots: 6
+        };
+        
         // UI elements
         this.screens = {
             title: document.getElementById('title-screen'),
@@ -110,11 +120,28 @@ class Game {
         this.setupCanvas();
         this.setupTables();
         this.setupStations();
+        this.setupServingCounter();
         this.bindEvents();
         this.showScreen('title');
         
         // Start render loop (even on title screen for animations)
         requestAnimationFrame((t) => this.gameLoop(t));
+    }
+    
+    setupServingCounter() {
+        const slotWidth = 70;
+        const slotSpacing = 80;
+        const totalWidth = this.servingCounter.maxSlots * slotSpacing;
+        
+        // Position it in the center-right area below kitchen
+        this.servingCounter.x = this.canvas.width - totalWidth - 250;
+        this.servingCounter.width = totalWidth;
+        
+        // Initialize empty slots
+        this.servingCounter.slots = [];
+        for (let i = 0; i < this.servingCounter.maxSlots; i++) {
+            this.servingCounter.slots.push(null);
+        }
     }
     
     setupCanvas() {
@@ -239,6 +266,54 @@ class Game {
             this.closeCookingModal();
         });
         
+        // Click outside to close modals
+        document.getElementById('cooking-modal').addEventListener('click', (e) => {
+            // Only close if clicking the backdrop, not the content
+            if (e.target.id === 'cooking-modal') {
+                this.closeCookingModal();
+            }
+        });
+        
+        document.getElementById('shop-screen').addEventListener('click', (e) => {
+            // Only close if clicking the backdrop, not the content
+            if (e.target.id === 'shop-screen') {
+                this.soundManager.playClick();
+                this.closeShop();
+            }
+        });
+        
+        document.getElementById('pause-screen').addEventListener('click', (e) => {
+            // Only close if clicking the backdrop, not the content
+            if (e.target.id === 'pause-screen') {
+                this.soundManager.playClick();
+                this.resumeGame();
+            }
+        });
+        
+        // Escape key to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Check which modal is open and close it
+                const cookingModal = document.getElementById('cooking-modal');
+                const shopScreen = document.getElementById('shop-screen');
+                const pauseScreen = document.getElementById('pause-screen');
+                
+                if (!cookingModal.classList.contains('hidden')) {
+                    this.closeCookingModal();
+                } else if (shopScreen.classList.contains('active')) {
+                    this.soundManager.playClick();
+                    this.closeShop();
+                } else if (pauseScreen.classList.contains('active')) {
+                    this.soundManager.playClick();
+                    this.resumeGame();
+                } else if (this.state.isRunning && !this.state.isPaused) {
+                    // If game is running and no modal open, pause the game
+                    this.soundManager.playClick();
+                    this.pauseGame();
+                }
+            }
+        });
+        
         // Canvas interactions
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
@@ -279,6 +354,7 @@ class Game {
         this.updateHeldItemDisplay();
         this.setupTables();
         this.setupStations();
+        this.setupServingCounter();
         this.showScreen('game');
         this.lastTime = performance.now();
     }
@@ -441,6 +517,12 @@ class Game {
             return;
         }
         
+        // Check serving counter clicks
+        if (this.isPointInRect(x, y, this.servingCounter.x, this.servingCounter.y, this.servingCounter.width, this.servingCounter.height)) {
+            this.handleServingCounterClick(x, y);
+            return;
+        }
+        
         // Check station clicks
         for (const station of Object.values(this.stations)) {
             if (this.isPointInRect(x, y, station.x, station.y, station.width, station.height)) {
@@ -473,6 +555,67 @@ class Game {
         }
     }
     
+    handleServingCounterClick(x, y) {
+        const slotSpacing = 80;
+        const slotIndex = Math.floor((x - this.servingCounter.x) / slotSpacing);
+        
+        if (slotIndex < 0 || slotIndex >= this.servingCounter.maxSlots) return;
+        
+        const slotX = this.servingCounter.x + slotIndex * slotSpacing + slotSpacing/2;
+        const slotY = this.servingCounter.y + this.servingCounter.height/2;
+        
+        // If holding an item, try to place it
+        if (this.heldItem) {
+            if (this.servingCounter.slots[slotIndex] === null) {
+                // Place item in empty slot
+                this.servingCounter.slots[slotIndex] = this.heldItem;
+                this.heldItem = null;
+                this.updateHeldItemDisplay();
+                this.soundManager.playClick();
+                this.addParticle(slotX, slotY, '📥');
+            } else {
+                // Slot is full - swap items
+                const temp = this.servingCounter.slots[slotIndex];
+                this.servingCounter.slots[slotIndex] = this.heldItem;
+                this.heldItem = temp;
+                this.updateHeldItemDisplay();
+                this.soundManager.playClick();
+            }
+        } else {
+            // Not holding anything - pick up item from slot
+            if (this.servingCounter.slots[slotIndex] !== null) {
+                this.heldItem = this.servingCounter.slots[slotIndex];
+                this.servingCounter.slots[slotIndex] = null;
+                this.updateHeldItemDisplay();
+                this.soundManager.playSuccess();
+                this.addParticle(slotX, slotY, this.heldItem.icon);
+            }
+        }
+    }
+    
+    autoTransferToServingCounter(station) {
+        // Find first empty slot in serving counter
+        const emptySlotIndex = this.servingCounter.slots.findIndex(slot => slot === null);
+        
+        if (emptySlotIndex !== -1) {
+            // Transfer item from station to serving counter
+            const item = station.collectItem();
+            if (item) {
+                this.servingCounter.slots[emptySlotIndex] = item;
+                
+                // Visual feedback
+                const slotSpacing = 80;
+                const slotX = this.servingCounter.x + emptySlotIndex * slotSpacing + slotSpacing/2;
+                const slotY = this.servingCounter.y + this.servingCounter.height/2;
+                
+                this.soundManager.playSuccess();
+                this.addParticle(station.x + station.width/2, station.y, '→');
+                this.addParticle(slotX, slotY, item.icon);
+            }
+        }
+        // If no empty slot, item stays at station (player must pick it up manually)
+    }
+    
     handleMouseMove(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -483,6 +626,11 @@ class Game {
         
         // Trash can hover (only if holding item)
         if (this.heldItem && this.isPointInRect(x, y, this.trashCan.x, this.trashCan.y, this.trashCan.width, this.trashCan.height)) {
+            cursor = 'pointer';
+        }
+        
+        // Serving counter hover
+        if (this.isPointInRect(x, y, this.servingCounter.x, this.servingCounter.y, this.servingCounter.width, this.servingCounter.height)) {
             cursor = 'pointer';
         }
         
@@ -538,17 +686,7 @@ class Game {
                     this.updateHeldItemDisplay();
                     
                     // Check if order complete
-                    if (customer.state === 'eating') {
-                        const bill = customer.calculateBill();
-                        const tip = customer.calculateTip();
-                        this.state.money += bill + tip;
-                        this.dayStats.tipsEarned += tip;
-                        this.dayStats.totalEarnings += bill + tip;
-                        this.dayStats.customersServed++;
-                        this.soundManager.playCoin();
-                        this.addParticle(table.x + table.width/2, table.y - 30, '💰');
-                        this.updateHUD();
-                    }
+                    this.checkOrderComplete(customer, table);
                 } else {
                     this.soundManager.playError();
                     this.addParticle(table.x + table.width/2, table.y, '❌');
@@ -567,6 +705,88 @@ class Game {
             this.addParticle(table.x + table.width/2, table.y, '📝');
             return;
         }
+        
+        // If customer has ordered and we're not holding anything, check for Serve All
+        if (table.customer && table.customer.state === 'ordered' && !this.heldItem) {
+            this.tryServeAll(table.customer, table);
+        }
+    }
+    
+    checkOrderComplete(customer, table) {
+        if (customer.state === 'eating') {
+            const bill = customer.calculateBill();
+            const tip = customer.calculateTip();
+            this.state.money += bill + tip;
+            this.dayStats.tipsEarned += tip;
+            this.dayStats.totalEarnings += bill + tip;
+            this.dayStats.customersServed++;
+            this.soundManager.playCoin();
+            this.addParticle(table.x + table.width/2, table.y - 30, '💰');
+            this.updateHUD();
+        }
+    }
+    
+    tryServeAll(customer, table) {
+        // Get unfulfilled items
+        const unfulfilledItems = customer.order.filter(o => !o.fulfilled);
+        if (unfulfilledItems.length === 0) return;
+        
+        // Check if all items are available in serving counter
+        const availableItems = this.getAvailableItemsForOrder(unfulfilledItems);
+        
+        if (availableItems.allAvailable) {
+            // Serve all items at once!
+            this.serveAllItems(customer, table, availableItems.slotIndices);
+        } else {
+            // Show what's missing
+            this.soundManager.playClick();
+            const missingCount = unfulfilledItems.length - availableItems.foundCount;
+            this.addParticle(table.x + table.width/2, table.y - 40, `Need ${missingCount} more`);
+        }
+    }
+    
+    getAvailableItemsForOrder(unfulfilledItems) {
+        const slotIndices = [];
+        const neededItems = unfulfilledItems.map(o => o.recipeId);
+        const availableSlots = [...this.servingCounter.slots];
+        let foundCount = 0;
+        
+        for (const recipeId of neededItems) {
+            // Find this item in serving counter
+            const slotIndex = availableSlots.findIndex(slot => slot && slot.id === recipeId);
+            if (slotIndex !== -1) {
+                slotIndices.push(slotIndex);
+                availableSlots[slotIndex] = null; // Mark as used
+                foundCount++;
+            }
+        }
+        
+        return {
+            allAvailable: foundCount === neededItems.length,
+            foundCount,
+            slotIndices
+        };
+    }
+    
+    serveAllItems(customer, table, slotIndices) {
+        // Remove items from serving counter and give to customer
+        for (const slotIndex of slotIndices) {
+            const item = this.servingCounter.slots[slotIndex];
+            if (item) {
+                customer.receiveItem(item.id);
+                this.orderManager.updateOrder(customer.id, item.id);
+                this.servingCounter.slots[slotIndex] = null;
+            }
+        }
+        
+        // Visual and audio feedback
+        this.soundManager.playSuccess();
+        this.addParticle(table.x + table.width/2, table.y, '🎉');
+        this.addParticle(table.x + table.width/2 - 20, table.y - 20, '✓');
+        this.addParticle(table.x + table.width/2 + 20, table.y - 20, '✓');
+        
+        // Check if order complete
+        this.checkOrderComplete(customer, table);
     }
     
     handleWaitingAreaClick(x, y) {
@@ -748,9 +968,15 @@ class Game {
             this.customerSpawnTimer = 0;
         }
         
-        // Update stations
+        // Update stations and auto-transfer ready items to serving counter
         Object.values(this.stations).forEach(station => {
+            const wasReady = station.isReady;
             station.update(deltaTime);
+            
+            // If item just became ready, auto-transfer to serving counter
+            if (station.isReady && !wasReady) {
+                this.autoTransferToServingCounter(station);
+            }
         });
         
         // Update customers
@@ -804,6 +1030,9 @@ class Game {
         
         // Draw trash can
         this.drawTrashCan();
+        
+        // Draw serving counter
+        this.drawServingCounter();
         
         // Draw stations
         Object.values(this.stations).forEach(station => {
@@ -880,6 +1109,85 @@ class Game {
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
             ctx.roundRect(x - 3, y - 3, width + 6, height + 6, 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+    
+    drawServingCounter() {
+        const ctx = this.ctx;
+        const { x, y, width, height, slots, maxSlots } = this.servingCounter;
+        const slotSpacing = 80;
+        const slotWidth = 65;
+        const slotHeight = 60;
+        
+        // Counter background
+        const gradient = ctx.createLinearGradient(x - 10, y, x - 10, y + height);
+        gradient.addColorStop(0, '#A1887F');
+        gradient.addColorStop(1, '#8D6E63');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(x - 15, y - 10, width + 30, height + 20, 12);
+        ctx.fill();
+        
+        // Counter border
+        ctx.strokeStyle = '#5D4037';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Counter label
+        ctx.font = '13px Fredoka';
+        ctx.fillStyle = '#FFF8E7';
+        ctx.textAlign = 'center';
+        ctx.fillText('📦 SERVING COUNTER', x + width/2, y - 18);
+        
+        // Draw slots
+        for (let i = 0; i < maxSlots; i++) {
+            const slotX = x + i * slotSpacing + (slotSpacing - slotWidth) / 2;
+            const slotY = y + (height - slotHeight) / 2;
+            
+            // Slot background
+            ctx.fillStyle = slots[i] ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.roundRect(slotX, slotY, slotWidth, slotHeight, 8);
+            ctx.fill();
+            
+            // Slot border
+            ctx.strokeStyle = slots[i] ? '#4CAF50' : '#8D6E63';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw item if slot has one
+            if (slots[i]) {
+                ctx.font = '36px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+                ctx.fillText(slots[i].icon, slotX + slotWidth/2, slotY + slotHeight/2);
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            } else {
+                // Empty slot indicator
+                ctx.font = '12px Fredoka';
+                ctx.fillStyle = '#BCAAA4';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('empty', slotX + slotWidth/2, slotY + slotHeight/2);
+            }
+        }
+        
+        // Highlight if holding an item
+        if (this.heldItem) {
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.roundRect(x - 18, y - 13, width + 36, height + 26, 14);
             ctx.stroke();
             ctx.setLineDash([]);
         }
@@ -1195,6 +1503,37 @@ class Game {
             ctx.shadowBlur = 0;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
+            
+            // Check if "Serve All" is available and show button
+            const unfulfilledItems = customer.order.filter(o => !o.fulfilled);
+            if (unfulfilledItems.length > 0 && !this.heldItem) {
+                const availableCheck = this.getAvailableItemsForOrder(unfulfilledItems);
+                if (availableCheck.allAvailable) {
+                    // Draw "SERVE ALL" button
+                    const btnY = y + 35;
+                    const btnWidth = 90;
+                    const btnHeight = 28;
+                    
+                    // Button background with pulsing effect
+                    const pulse = Math.sin(Date.now() / 300) * 0.15 + 0.85;
+                    ctx.fillStyle = `rgba(76, 175, 80, ${pulse})`;
+                    ctx.beginPath();
+                    ctx.roundRect(x - btnWidth/2, btnY, btnWidth, btnHeight, 14);
+                    ctx.fill();
+                    
+                    // Button border
+                    ctx.strokeStyle = '#2E7D32';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Button text
+                    ctx.font = 'bold 12px Fredoka';
+                    ctx.fillStyle = '#FFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🍽️ SERVE ALL', x, btnY + btnHeight/2);
+                }
+            }
         }
         
         // Patience bar (moved below the order bubble)
